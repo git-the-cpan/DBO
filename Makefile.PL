@@ -1,75 +1,67 @@
-#------------------------------------------------------------------------------
-# Makefile.PL for DBO - Database Objects
-#
-# AUTHOR
-#   Gareth Rees
-#
-# COPYRIGHT
-#   Copyright (c) 1999 Canon Research Centre Europe Ltd/
-#
-# $Id: Makefile.PL,v 1.1 1999/06/04 21:56:09 garethr Exp $
-#------------------------------------------------------------------------------
+use 5.008;
+use ExtUtils::MakeMaker;
+use File::Basename;
 
-use strict;
-use Data::Dumper;
-use ExtUtils::MakeMaker qw(prompt WriteMakefile);
-use vars qw($CONFIG @PARAMETERS);
+# See lib/ExtUtils/MakeMaker.pm for details of how to influence
+# the contents of the Makefile that is written.
+WriteMakefile(
+    'NAME'		=> 'DBO',
+    'VERSION_FROM'	=> 'DBO/Version.pm', # finds $VERSION
+    ($] >= 5.005 ?    ## Add these new keywords supported since 5.005
+      (ABSTRACT_FROM => 'DBO.pm', # retrieve abstract from module
+       AUTHOR     => 'A. U. Thor <jmillaway@ghrsystems.com>') : ()),
 
-# Interrogate the user for the test configuration details (which will be
-# collected in the $CONFIG hashref and then saved in the .status file in
-# the current directory).  The configuration parameters are described in
-# the @PARAMETERS array
+    'PREREQ_PM'		=> {map{$_=>0} qw(
+        base
+        Carp
+        Carp::Assert
+        Class::MethodMaker
+        DBI
+        Tie::Array
+        Tie::IxHash)},
+    'EXE_FILES' => [qw(dbo-gen)],
 
-$CONFIG =
-  {
-   driver   => 'mSQL',
-   database => '',
-   user     => '',
-   password => '',
-  };
+    'PM' => +{ map {$_ => "\$(INST_LIBDIR)/$_" }
+        # Update with:  r!find DBO/ DBO.pm -name '*.pm'
+        qw(
 
-foreach (@PARAMETERS) {
-  $CONFIG->{$_->[0]} = $_->[2];
-}
+          DBO/Conf.pm
+          DBO/Query.pm
+          DBO/Base.pm
+          DBO/Meta/TableInfo.pm
+          DBO/Meta/ColumnInfo.pm
+          DBO/Meta/Key.pm
+          DBO/Meta/HasMany.pm
+          DBO/Meta/HasA.pm
+          DBO/Meta/HasQuery.pm
+          DBO/Meta/OneToMany.pm
+          DBO/Query/LeftJoin.pm
+          DBO/Query/Expr.pm
+          DBO/Query/Join.pm
+          DBO/Query/Update.pm
+          DBO/Query/Limit.pm
+          DBO/Query/OrderBy.pm
+          DBO/Query/RightJoin.pm
+          DBO/Query/Text.pm
+          DBO/Query/Insert.pm
+          DBO/Query/GroupBy.pm
+          DBO/Query/Delete.pm
+          DBO/Base/Private.pm
+          DBO/Base/Defs.pm
+          DBO/Value/Key.pm
+          DBO/Value/Column.pm
+          DBO/Test/Util.pm
+          DBO/Test/Objects.pm
+          DBO/Generator.pm
+          DBO/GluedQuery.pm
+          DBO/Util.pm
+          DBO/DBH/Owner.pm
+          DBO/GluedUpdate.pm
+          DBO/Value.pm
+          DBO/Version.pm
+          DBO/Tie/PrimaryKeyList.pm
+          DBO.pm
 
-# Load the previous configuration if it exists.
+        )},
+);
 
-require '.status' if -f '.status';
-
-# Prompt the user for the configuration details.
-
-$CONFIG->{driver}
-  = prompt("Name of the DBI driver for the test database?",
-	   $CONFIG->{driver});
-
-$CONFIG->{datasource}
-  = prompt("Datasource name for the test database?",
-	   $CONFIG->{datasource} || "dbi:$CONFIG->{driver}:test:localhost");
-
-$CONFIG->{user}
-  = prompt("User name for connecting to $CONFIG->{datasource}?",
-	   $CONFIG->{user});
-
-$CONFIG->{password}
-  = prompt("Password for connecting to $CONFIG->{datasource}?",
-	   $CONFIG->{password});
-
-# Write configuration to .status
-
-open STATUS, '> .status'
-  and print STATUS Data::Dumper->Dump([$CONFIG], ['$CONFIG'])
-  and close STATUS
-  or die "Cannot create .status file: $!\n";
-
-WriteMakefile
-  (
-   NAME		=> 'DBO',
-   PREREQ_PM    => { DBI => 0,
-		     "DBD::$CONFIG->{driver}" => 0,
-		     'Class::Multimethods' => 0,
-		     'HTML::FromText' => 0,
-		   },
-   VERSION_FROM	=> 'lib/DBO.pm',
-   dist		=> { COMPRESS => 'gzip', SUFFIX => 'gz' },
-   realclean	=> { FILES => '.status' },
-  );
